@@ -1,0 +1,62 @@
+version: '3'
+ 
+services:
+  autotests:
+    build:
+      context: .
+    volumes:
+      - ./demo:/demo
+    command: sh -c "
+              ./wait-for-postgres.sh postgresql &&
+              python3 manage.py test &&
+              kill -s SIGKILL 1
+              "
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - postgresql
+
+  runserver:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./demo:/demo
+    command: sh -c "
+              ./wait-for-postgres.sh postgresql &&
+              python3 manage.py makemigrations &&
+              python3 manage.py migrate &&
+              python3 manage.py createsuperuser --noinput &&
+              python3 manage.py loaddata fixture.json &&
+              python3 manage.py runserver 0.0.0.0:8000
+              "
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - postgresql
+      - redis
+      - celery
+
+  postgresql:
+    image: postgres:alpine
+    env_file:
+      - ./.env.dev
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:alpine
+    
+  celery:
+    restart: always
+    build:
+      context: .
+    command: celery -A demo worker -l info
+    volumes:
+      - ./demo:/demo
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - postgresql
+      - redis
