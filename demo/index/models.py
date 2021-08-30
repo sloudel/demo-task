@@ -19,8 +19,8 @@ class Page(Base):
                 content.video.increase_view_counter()
             if content.audio:
                 content.audio.increase_view_counter()
-            if content.audio:
-                content.audio.increase_view_counter()
+            if content.text:
+                content.text.increase_view_counter()
 
 # абстрактный
 class ContentBase(Base):
@@ -30,9 +30,8 @@ class ContentBase(Base):
         return self.title + f', 👁: {self.view_counter}'
     
     def increase_view_counter(self):
-        if self:
-            self.view_counter = F('view_counter') + 1
-            self.save()
+        self.view_counter = F('view_counter') + 1
+        self.save()
 
 class Video(ContentBase):
     data_file = models.FileField(upload_to='static/video/%Y/%m/%d/')
